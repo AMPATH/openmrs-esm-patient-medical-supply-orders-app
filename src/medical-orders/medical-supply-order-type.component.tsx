@@ -6,19 +6,18 @@ import {
   AddIcon,
   ChevronDownIcon,
   ChevronUpIcon,
-  closeWorkspace,
-  type DefaultWorkspaceProps,
+  launchWorkspace2,
   useConfig,
   useLayoutType,
 } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
-import { launchPatientWorkspace, useOrderBasket, useOrderType } from '@openmrs/esm-patient-common-lib';
+import { type OrderBasketExtensionProps, useOrderBasket, useOrderType } from '@openmrs/esm-patient-common-lib';
 import OrderBasketItemTile from './order-basket-item-tile.component';
 import { prepOrderPostData } from './resources';
 import { type ConfigObject } from '../config-schema';
 import type { MedicalSupplyOrderBasketItem } from './types';
 
-const MedicalSupplyOrderPanel: React.FC = () => {
+const MedicalSupplyOrderPanel: React.FC<OrderBasketExtensionProps> = ({ patient }) => {
   const { orderTypes } = useConfig<ConfigObject>();
   return (
     <>
@@ -27,6 +26,7 @@ const MedicalSupplyOrderPanel: React.FC = () => {
           key={orderTypeUuid}
           orderTypeUuid={orderTypeUuid}
           orderableConceptSets={orderableConceptSets}
+          patient={patient}
         />
       ))}
     </>
@@ -36,14 +36,15 @@ const MedicalSupplyOrderPanel: React.FC = () => {
 interface MedicalSupplyOrderTypeProps {
   orderTypeUuid: string;
   orderableConceptSets: Array<string>;
+  patient: fhir.Patient;
 }
 
-const MedicalSupplyOrderType: React.FC<MedicalSupplyOrderTypeProps> = ({ orderTypeUuid }) => {
+const MedicalSupplyOrderType: React.FC<MedicalSupplyOrderTypeProps> = ({ orderTypeUuid, patient }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const { orderType, isLoadingOrderType } = useOrderType(orderTypeUuid);
 
-  const { orders, setOrders } = useOrderBasket<MedicalSupplyOrderBasketItem>(orderTypeUuid, prepOrderPostData);
+  const { orders, setOrders } = useOrderBasket<MedicalSupplyOrderBasketItem>(patient, orderTypeUuid, prepOrderPostData);
   const [isExpanded, setIsExpanded] = useState(orders.length > 0);
   const {
     incompleteOrderBasketItems,
@@ -82,25 +83,15 @@ const MedicalSupplyOrderType: React.FC<MedicalSupplyOrderTypeProps> = ({ orderTy
   }, [orders]);
 
   const openConceptSearch = () => {
-    closeWorkspace('order-basket', {
-      ignoreChanges: true,
-      onWorkspaceClose: () =>
-        launchPatientWorkspace('medical-supply-orderable-concept-workspace', {
-          orderTypeUuid,
-        }),
-      closeWorkspaceGroup: false,
+    launchWorkspace2('medical-supply-orderable-concept-workspace', {
+      orderTypeUuid,
     });
   };
 
   const openOrderForm = (order: MedicalSupplyOrderBasketItem) => {
-    closeWorkspace('order-basket', {
-      ignoreChanges: true,
-      onWorkspaceClose: () =>
-        launchPatientWorkspace('medical-supply-orderable-concept-workspace', {
-          order,
-          orderTypeUuid,
-        }),
-      closeWorkspaceGroup: false,
+    launchWorkspace2('medical-supply-orderable-concept-workspace', {
+      order,
+      orderTypeUuid,
     });
   };
 

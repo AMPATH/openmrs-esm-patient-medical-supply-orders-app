@@ -9,7 +9,7 @@ on:
     types:
       - created
 env:
-  ESM_NAME: "@mekomsolutions/esm-patient-medical-supply-orders-app"
+  ESM_NAME: "@sidvaish97/esm-patient-medical-supply-orders-app"
   JS_NAME: "openmrs-esm-patient-medical-supply-orders-app.js"
 
 jobs:

@@ -1,5 +1,4 @@
 import { Type, validator, validators } from '@openmrs/esm-framework';
-import _default from 'react-hook-form/dist/utils/createSubject';
 
 export const configSchema = {
   orderTypes: {

@@ -1,6 +1,5 @@
 import React, { type ComponentProps, useCallback } from 'react';
 import {
-  launchPatientWorkspace,
   useOrderBasket,
   type OrderBasketItem,
   useOrderableConceptSets,
@@ -9,8 +8,9 @@ import {
 import { useTranslation } from 'react-i18next';
 import {
   ArrowRightIcon,
-  type DefaultWorkspaceProps,
+  launchWorkspace2,
   ShoppingCartArrowDownIcon,
+  type Workspace2DefinitionProps,
   useLayoutType,
   useSession,
 } from '@openmrs/esm-framework';
@@ -28,7 +28,8 @@ interface OrderableConceptSearchResultsProps {
   cancelOrder: () => void;
   orderableConceptSets: Array<string>;
   orderTypeUuid: string;
-  closeWorkspace: DefaultWorkspaceProps['closeWorkspace'];
+  closeWorkspace: Workspace2DefinitionProps['closeWorkspace'];
+  patient: fhir.Patient;
 }
 
 const OrderableConceptSearchResults: React.FC<OrderableConceptSearchResultsProps> = ({
@@ -39,6 +40,7 @@ const OrderableConceptSearchResults: React.FC<OrderableConceptSearchResultsProps
   orderableConceptSets,
   orderTypeUuid,
   closeWorkspace,
+  patient,
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
@@ -90,6 +92,7 @@ const OrderableConceptSearchResults: React.FC<OrderableConceptSearchResultsProps
                 concept={concept}
                 orderTypeUuid={orderTypeUuid}
                 closeWorkspace={closeWorkspace}
+                patient={patient}
               />
             ))}
           </div>
@@ -154,7 +157,8 @@ interface TestTypeSearchResultItemProps {
   concept: OrderableConcept;
   openOrderForm: (searchResult: OrderBasketItem) => void;
   orderTypeUuid: string;
-  closeWorkspace: DefaultWorkspaceProps['closeWorkspace'];
+  closeWorkspace: Workspace2DefinitionProps['closeWorkspace'];
+  patient: fhir.Patient;
 }
 
 const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
@@ -162,11 +166,12 @@ const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
   openOrderForm,
   orderTypeUuid,
   closeWorkspace,
+  patient,
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
-  const { orders, setOrders } = useOrderBasket<OrderBasketItem>(orderTypeUuid, prepOrderPostData);
+  const { orders, setOrders } = useOrderBasket<OrderBasketItem>(patient, orderTypeUuid, prepOrderPostData);
 
   const orderAlreadyInBasket = useMemo(
     () => orders?.some((order) => order.concept.uuid === concept.uuid),
@@ -184,10 +189,10 @@ const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
     const orderBasketItem = createOrderBasketItem(concept);
     orderBasketItem.isOrderIncomplete = true;
     setOrders([...orders, orderBasketItem]);
-    closeWorkspace({
-      ignoreChanges: true,
-      onWorkspaceClose: () => launchPatientWorkspace('order-basket'),
-      closeWorkspaceGroup: false,
+    closeWorkspace({ discardUnsavedChanges: true }).then((didClose) => {
+      if (didClose) {
+        launchWorkspace2('order-basket');
+      }
     });
   }, [orders, setOrders, createOrderBasketItem, concept, closeWorkspace]);
 
