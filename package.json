@@ -107,9 +107,7 @@
     "swc-loader": "^0.2.3",
     "swr": "^2.2.5",
     "turbo": "^2.2.3",
-    "typescript": "^5.9.2",
-    "webpack": "^5.88.1",
-    "webpack-cli": "^5.1.4"
+    "typescript": "^5.9.2"
   },
   "lint-staged": {
     "packages/**/src/**/*.{ts,tsx}": "eslint --cache --fix --max-warnings 0",
