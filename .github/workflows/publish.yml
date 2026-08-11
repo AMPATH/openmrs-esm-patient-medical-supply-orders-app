@@ -1,0 +1,104 @@
+name: Package Publishing
+
+on:
+  push:
+    branches: [main]
+  release:
+    types:
+      - created
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+
+      - name: 📦 Install dependencies
+        run: yarn install --immutable
+
+      - name: 🔧 Run type checks
+        run: yarn typescript
+
+      - name: 🏗️ Build
+        run: yarn build
+
+      - name: 📤 Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          overwrite: true
+
+  publish-prerelease:
+    runs-on: ubuntu-latest
+    needs: build
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: 📦 Install dependencies
+        run: yarn install --immutable
+
+      - name: 🏷️ Set prerelease version
+        run: |
+          BASE_VERSION=$(node -p "require('./package.json').version.split('-')[0]")
+          PUBLISH_VERSION="${BASE_VERSION}-next.${{ github.run_number }}"
+          node -e "const fs=require('fs');const p=require('./package.json');p.version='${PUBLISH_VERSION}';fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n')"
+          echo "Publishing version: ${PUBLISH_VERSION} (tag: next)"
+
+      - name: 🏗️ Build
+        run: yarn build
+
+      - name: 📦 Publish to npm
+        run: yarn npm publish --tag next --access public
+        env:
+          YARN_NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+
+  publish-release:
+    runs-on: ubuntu-latest
+    needs: build
+    if: ${{ github.event_name == 'release' }}
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: 📦 Install dependencies
+        run: yarn install --immutable
+
+      - name: 🏷️ Set release version
+        run: |
+          RELEASE_VERSION=${{ github.ref_name }}
+          RELEASE_VERSION=${RELEASE_VERSION#v}
+          node -e "const fs=require('fs');const p=require('./package.json');p.version='${RELEASE_VERSION}';fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n')"
+          echo "Publishing release version: ${RELEASE_VERSION}"
+
+      - name: 🏗️ Build
+        run: yarn build
+
+      - name: 📦 Publish to npm with latest tag
+        run: yarn npm publish --tag latest --access public
+        env:
+          YARN_NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
