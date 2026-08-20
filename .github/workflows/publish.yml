@@ -65,10 +65,22 @@ jobs:
       - name: 🏗️ Build
         run: yarn build
 
+      - name: 🔐 Verify npm token is available
+        env:
+          NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+        run: |
+          if [ -z "$NPM_AUTH_TOKEN" ]; then
+            echo "::error::NPM_AUTH_TOKEN secret is not set on this repository. Create an npm Automation token with publish rights and add it under Settings -> Secrets and variables -> Actions as NPM_AUTH_TOKEN."
+            exit 1
+          fi
+
       - name: 📦 Publish to npm
         run: yarn npm publish --tag next --access public
         env:
           YARN_NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+          YARN_NPM_REGISTRY_SERVER: 'https://registry.npmjs.org'
+          YARN_NPM_PUBLISH_REGISTRY: 'https://registry.npmjs.org'
+          YARN_NPM_ALWAYS_AUTH: 'true'
 
   publish-release:
     runs-on: ubuntu-latest
@@ -98,7 +110,19 @@ jobs:
       - name: 🏗️ Build
         run: yarn build
 
+      - name: 🔐 Verify npm token is available
+        env:
+          NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+        run: |
+          if [ -z "$NPM_AUTH_TOKEN" ]; then
+            echo "::error::NPM_AUTH_TOKEN secret is not set on this repository. Create an npm Automation token with publish rights and add it under Settings -> Secrets and variables -> Actions as NPM_AUTH_TOKEN."
+            exit 1
+          fi
+
       - name: 📦 Publish to npm with latest tag
         run: yarn npm publish --tag latest --access public
         env:
           YARN_NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+          YARN_NPM_REGISTRY_SERVER: 'https://registry.npmjs.org'
+          YARN_NPM_PUBLISH_REGISTRY: 'https://registry.npmjs.org'
+          YARN_NPM_ALWAYS_AUTH: 'true'
