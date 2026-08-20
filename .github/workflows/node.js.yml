@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ main ]
 env:
-  ESM_NAME: "@sidvaish97/esm-patient-medical-supply-orders-app"
+  ESM_NAME: "@ampath/esm-patient-medical-supply-orders-app"
   JS_NAME: "openmrs-esm-patient-medical-supply-orders-app.js"
 
 jobs:

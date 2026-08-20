@@ -1,1 +1,1 @@
-export const moduleName = '@sidvaish97/esm-patient-medical-supply-orders-app';
+export const moduleName = '@ampath/esm-patient-medical-supply-orders-app';
