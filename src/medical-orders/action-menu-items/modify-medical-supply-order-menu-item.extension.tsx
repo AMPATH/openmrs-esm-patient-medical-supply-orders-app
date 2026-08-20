@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 interface ModifyMedicalSupplyOrderMenuItemProps {
   orderItem: Order;
   className: string;
-  responsiveSize: string;
+  responsiveSize: 'xs' | 'sm' | 'md' | 'lg';
 }
 
 export default function ModifyMedicalSupplyOrderMenuItem({
@@ -17,12 +17,15 @@ export default function ModifyMedicalSupplyOrderMenuItem({
   responsiveSize,
 }: ModifyMedicalSupplyOrderMenuItemProps) {
   const { t } = useTranslation();
+  const patientUuid = orderItem.patient.uuid;
+  const patient = { id: patientUuid } as fhir.Patient;
   const openMedicalSupplyOrderFormWorkspace = useLaunchWorkspaceRequiringVisit(
+    patientUuid,
     'medical-supply-orderable-concept-workspace',
   );
-  const launchOrderBasket = useLaunchWorkspaceRequiringVisit('order-basket');
+  const launchOrderBasket = useLaunchWorkspaceRequiringVisit(patientUuid, 'order-basket');
 
-  const { orders, setOrders } = useOrderBasket<MedicalSupplyOrderBasketItem>(orderItem.orderType.uuid);
+  const { orders, setOrders } = useOrderBasket<MedicalSupplyOrderBasketItem>(patient, orderItem.orderType.uuid);
   const alreadyInBasket = orders.some((x) => x.uuid === orderItem.uuid);
 
   const handleModifyOrder = () => {

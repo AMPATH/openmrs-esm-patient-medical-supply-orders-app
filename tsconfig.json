@@ -5,7 +5,7 @@
     "allowSyntheticDefaultImports": true,
     "jsx": "react",
     "skipLibCheck": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "lib": [
       "dom",
       "es5",
@@ -19,6 +19,7 @@
     ],
     "resolveJsonModule": true,
     "noEmit": true,
-    "target": "esnext"
+    "target": "esnext",
+    "typeRoots": ["./node_modules/@types", "./node_modules/testing-library"]
   }
 }
