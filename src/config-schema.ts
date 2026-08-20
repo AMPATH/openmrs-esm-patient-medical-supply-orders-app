@@ -35,13 +35,13 @@ export const configSchema = {
     _type: Type.Object,
     _description: 'Concept to be used for fetching quantity units',
     _default: {
-      conceptUuid: '162402AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      conceptUuid: 'cde07652-a157-4ee9-bb34-75ca8252cfb3',
       map: 'setMembers',
     },
     conceptUuid: {
       _type: Type.UUID,
       _description: 'UUID for the quantity units concepts',
-      _default: '162402AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _default: 'cde07652-a157-4ee9-bb34-75ca8252cfb3',
     },
     map: {
       _type: Type.UUID,

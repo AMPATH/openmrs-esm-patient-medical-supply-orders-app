@@ -9,6 +9,7 @@
   "scripts": {
     "start": "openmrs develop",
     "serve": "rspack serve --mode=development",
+    "dev": "openmrs develop --backend=https://kibana.ampath.or.ke --api-url=/openmrs --config-url=https://ngx.ampath.or.ke/o3-config.json --port=9000",
     "build": "rspack --mode=production",
     "analyze": "rspack --mode=production --env analyze=true",
     "lint": "eslint src --ext js,jsx,ts,tsx --max-warnings 0",
