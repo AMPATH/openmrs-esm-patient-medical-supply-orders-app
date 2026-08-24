@@ -72,10 +72,12 @@ export function OrderForm({
           urgency: z.string().refine((value) => value !== '', {
             message: t('addLabOrderPriorityRequired', 'Priority is required'),
           }),
-          quantity: z.number({
-            required_error: t('quantityRequired', 'Quantity is required'),
-            invalid_type_error: t('quantityRequired', 'Quantity is required'),
-          }),
+          quantity: z
+            .number({
+              required_error: t('quantityRequired', 'Quantity is required'),
+              invalid_type_error: t('quantityRequired', 'Quantity is required'),
+            })
+            .min(1, { message: t('quantityMustBeAtLeastOne', 'Quantity must be at least 1') }),
           quantityUnits: z.object(
             {
               display: z.string(),
@@ -152,7 +154,7 @@ export function OrderForm({
   );
 
   const cancelOrder = useCallback(() => {
-    setOrders(orders.filter((order) => order.concept.uuid !== defaultValues.concept.conceptUuid));
+    setOrders(orders.filter((order) => order.concept.uuid !== defaultValues.concept.uuid));
     closeWorkspace().then((didClose) => {
       if (didClose) {
         launchWorkspace2('order-basket');
@@ -234,9 +236,10 @@ export function OrderForm({
                     <NumberInput
                       {...field}
                       id="quantity"
-                      onChange={(e) => {
-                        const value = (e.target as HTMLInputElement).value;
-                        field.onChange(value !== '' ? parseInt(value) : undefined);
+                      allowEmpty
+                      min={1}
+                      onChange={(event, state) => {
+                        field.onChange(state.value === '' ? undefined : Math.trunc(Number(state.value)));
                       }}
                       invalid={Boolean(error?.message)}
                       invalidText={error?.message}
