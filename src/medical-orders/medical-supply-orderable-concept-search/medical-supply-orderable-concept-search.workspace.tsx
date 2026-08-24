@@ -22,7 +22,7 @@ import { Button, Search } from '@carbon/react';
 import OrderableConceptSearchResults from './search-results.component';
 import { type ConfigObject } from '../../config-schema';
 import { OrderForm } from '../medical-supply-order-form/medical-supply-order-form.component';
-import { prepOrderPostData } from '../resources';
+import { ordersEqual, prepOrderPostData } from '../resources';
 import { type MedicalSupplyOrderBasketItem } from '../types';
 
 interface OrderableConceptSearchWorkspaceProps {
@@ -31,12 +31,6 @@ interface OrderableConceptSearchWorkspaceProps {
 }
 
 export const careSettingUuid = '6f0c9a92-6f24-11e3-af88-005056821db0';
-
-type DrugsOrOrders = Pick<OrderBasketItem, 'action'>;
-
-export function ordersEqual(order1: DrugsOrOrders, order2: DrugsOrOrders) {
-  return order1.action === order2.action;
-}
 
 const OrderableConceptSearchWorkspace: React.FC<
   PatientWorkspace2DefinitionProps<OrderableConceptSearchWorkspaceProps, OrderBasketWindowProps>

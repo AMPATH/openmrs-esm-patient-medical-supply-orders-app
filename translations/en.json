@@ -24,6 +24,7 @@
   "pleaseRequiredFields": "Please fill all required fields",
   "priority": "Priority",
   "quantity": "Quantity",
+  "quantityMustBeAtLeastOne": "Quantity must be at least 1",
   "quantityRequired": "Quantity is required",
   "quantityUnit": "Quantity unit",
   "quantityUnitsRequired": "Quantity units is required",
