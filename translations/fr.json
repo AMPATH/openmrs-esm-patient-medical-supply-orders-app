@@ -12,6 +12,7 @@
   "errorFetchingQuantityUnits": "Erreur lors de l'obtention des unités de quantité",
   "errorFetchingQuantityUnitsDescription": "Veuillez essayer de rafraichir l'ordonnance ou contactez votre administrateur système",
   "errorFetchingTestTypes": "Erreur de recherche pour \"{{searchTerm}}\"",
+  "errorLaunchingWorkspace": "Error launching workspace",
   "goToDrugOrderForm": "Prescire",
   "medicalSupplyOrderDescription": "{{quantity}} {{quantityUnits}}",
   "noResultsForTestTypeSearch": "Aucun résultat pour \"{{searchTerm}}\"",

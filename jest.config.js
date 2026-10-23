@@ -13,7 +13,7 @@ module.exports = {
     '!**/e2e/**',
   ],
   transform: {
-    '^.+\\.tsx?$': ['@swc/jest'],
+    '^.+\\.[jt]sx?$': ['@swc/jest'],
   },
   transformIgnorePatterns: ['/node_modules/(?!@openmrs)'],
   moduleNameMapper: {
@@ -21,7 +21,6 @@ module.exports = {
     '\\.(s?css)$': 'identity-obj-proxy',
     '^lodash-es/(.*)$': 'lodash/$1',
     'lodash-es': 'lodash',
-    '^dexie$': require.resolve('dexie'),
   },
   setupFilesAfterEnv: ['<rootDir>/src/setup-tests.ts'],
   testPathIgnorePatterns: [path.resolve(__dirname, 'e2e')],
