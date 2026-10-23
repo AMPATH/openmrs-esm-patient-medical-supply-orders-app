@@ -12,6 +12,7 @@
   "errorFetchingQuantityUnits": "Error fetching quantity units",
   "errorFetchingQuantityUnitsDescription": "Try launching the order form again or contact your administrator",
   "errorFetchingTestTypes": "Error fetching results for \"{{searchTerm}}\"",
+  "errorLaunchingWorkspace": "Error launching workspace",
   "goToDrugOrderForm": "Order form",
   "medicalSupplyOrderDescription": "{{quantity}} {{quantityUnits}}",
   "noResultsForTestTypeSearch": "No results to display for \"{{searchTerm}}\"",

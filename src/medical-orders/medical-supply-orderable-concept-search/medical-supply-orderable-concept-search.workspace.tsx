@@ -44,15 +44,14 @@ const OrderableConceptSearchWorkspace: React.FC<
   const { orderTypes } = useConfig<ConfigObject>();
 
   const title = t('addOrderForOrderType', 'Add {{orderTypeDisplay}}', {
-    orderTypeDisplay: orderType?.display.toLocaleLowerCase() ?? '',
+    orderTypeDisplay: orderType?.display?.toLocaleLowerCase() ?? '',
   });
 
   const [currentOrder, setCurrentOrder] = useState<MedicalSupplyOrderBasketItem>(initialOrder);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const orderableConceptSets = useMemo(
-    () => orderTypes.find((orderType) => orderType.orderTypeUuid === orderTypeUuid).orderableConceptSets,
-
+    () => orderTypes.find((orderType) => orderType.orderTypeUuid === orderTypeUuid)?.orderableConceptSets ?? [],
     [orderTypeUuid, orderTypes],
   );
 

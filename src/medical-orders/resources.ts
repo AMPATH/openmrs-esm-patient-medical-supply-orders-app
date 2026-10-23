@@ -112,7 +112,7 @@ export function useQuantityUnits() {
   const config = useConfig<ConfigObject>();
   const { quantityUnits } = config;
   const { data, isLoading, isValidating, error } = useSWRImmutable<FetchResponse<Concept>>(
-    quantityUnits.conceptUuid ? `${restBaseUrl}/concept/${quantityUnits.conceptUuid}` : null,
+    quantityUnits?.conceptUuid ? `${restBaseUrl}/concept/${quantityUnits.conceptUuid}` : null,
     openmrsFetch,
   );
 
@@ -124,7 +124,7 @@ export function useQuantityUnits() {
 
   const results = useMemo(
     () => ({
-      concepts: quantityUnits.map == 'setMembers' ? data?.data.setMembers : data?.data.answers,
+      concepts: quantityUnits?.map == 'setMembers' ? data?.data.setMembers : data?.data.answers,
       isLoadingQuantityUnits: isLoading,
       errorFetchingQuantityUnits: error,
     }),

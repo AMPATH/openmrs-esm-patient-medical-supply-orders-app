@@ -7,6 +7,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   launchWorkspace2,
+  showSnackbar,
   useConfig,
   useLayoutType,
 } from '@openmrs/esm-framework';
@@ -85,6 +86,13 @@ const MedicalSupplyOrderType: React.FC<MedicalSupplyOrderTypeProps> = ({ orderTy
   const openConceptSearch = () => {
     launchWorkspace2('medical-supply-orderable-concept-workspace', {
       orderTypeUuid,
+    }).catch((err) => {
+      console.error(`Failed to launch medical-supply-orderable-concept-workspace: ${err}`);
+      showSnackbar({
+        title: t('errorLaunchingWorkspace', 'Error launching workspace'),
+        subtitle: err?.message,
+        kind: 'error',
+      });
     });
   };
 
@@ -92,6 +100,13 @@ const MedicalSupplyOrderType: React.FC<MedicalSupplyOrderTypeProps> = ({ orderTy
     launchWorkspace2('medical-supply-orderable-concept-workspace', {
       order,
       orderTypeUuid,
+    }).catch((err) => {
+      console.error(`Failed to launch medical-supply-orderable-concept-workspace: ${err}`);
+      showSnackbar({
+        title: t('errorLaunchingWorkspace', 'Error launching workspace'),
+        subtitle: err?.message,
+        kind: 'error',
+      });
     });
   };
 
