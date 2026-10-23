@@ -182,7 +182,7 @@ const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
     (testType: OrderableConcept) => {
       return createEmptyOrder(testType, session.currentProvider?.uuid);
     },
-    [session.currentProvider.uuid],
+    [session.currentProvider?.uuid],
   );
 
   const addToBasket = useCallback(() => {
