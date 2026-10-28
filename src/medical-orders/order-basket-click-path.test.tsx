@@ -16,6 +16,35 @@ const config = {
   quantityUnits: { conceptUuid: 'qu-1', map: 'setMembers' as const },
 };
 
+// A user session without a provider account — the field the results list dereferences.
+const sessionState = { currentProvider: null, sessionId: 'sess-1' };
+
+// Shape-identical excerpt of the MEDICAL SUPPLIES SET concept response.
+const medicalSuppliesSet = {
+  display: 'MEDICAL SUPPLIES SET',
+  uuid: 'c6f16618-d618-49dc-9a5a-b5aef140d02c',
+  setMembers: [
+    {
+      display: 'DIALYZER SUPPLY ITEM',
+      uuid: '64211947-1114-4008-ac2a-c7c5afd4d6ee',
+      names: [{ display: 'Dialyzer' }, { display: 'DIALYZER SUPPLY ITEM' }],
+      setMembers: [],
+    },
+    {
+      display: 'BLOODLINE SET',
+      uuid: 'be0508b7-ac1e-4807-acbb-f5b8e7f110f6',
+      names: [{ display: 'BLOODLINE SET' }, { display: 'Bloodline set' }],
+      setMembers: [],
+    },
+    {
+      display: 'STERILE GLOVES',
+      uuid: 'c06ce136-0ba7-4cee-9a95-edfe35e1a6d5',
+      names: [{ display: 'STERILE GLOVES' }, { display: 'Sterile gloves' }],
+      setMembers: [],
+    },
+  ],
+};
+
 jest.mock('@openmrs/esm-framework', () => {
   const actual = jest.requireActual('@openmrs/esm-framework');
   return {
@@ -23,6 +52,9 @@ jest.mock('@openmrs/esm-framework', () => {
     useConfig: jest.fn(() => config),
     useLayoutType: jest.fn(() => 'desktop'),
     launchWorkspace2: jest.fn(() => Promise.resolve(true)),
+    useSession: jest.fn(() => sessionState),
+    openmrsFetch: jest.fn(() => Promise.resolve({ data: medicalSuppliesSet })),
+    restBaseUrl: '/ws/rest/v1',
   };
 });
 
@@ -116,5 +148,39 @@ describe('medical supply order basket click path', () => {
     );
 
     expect(screen.getByText(/gloves/i)).toBeInTheDocument();
+  });
+
+  it('renders search results for the medical supplies set even when the user has no provider account', async () => {
+    render(
+      <OrderableConceptSearchWorkspace
+        {...(workspacePropsBase as any)}
+        workspaceProps={{ orderTypeUuid: 'ot-1' }}
+        groupProps={groupProps as any}
+        closeWorkspace={jest.fn(() => Promise.resolve(true))}
+      />,
+    );
+
+    // The concept set fetch resolves; all set members should render as result tiles.
+    await waitFor(() => expect(screen.getByText('DIALYZER SUPPLY ITEM')).toBeInTheDocument());
+    expect(screen.getByText('BLOODLINE SET')).toBeInTheDocument();
+    expect(screen.getByText('STERILE GLOVES')).toBeInTheDocument();
+  });
+
+  it('renders search results when filtering by a search term', async () => {
+    render(
+      <OrderableConceptSearchWorkspace
+        {...(workspacePropsBase as any)}
+        workspaceProps={{ orderTypeUuid: 'ot-1' }}
+        groupProps={groupProps as any}
+        closeWorkspace={jest.fn(() => Promise.resolve(true))}
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByText('DIALYZER SUPPLY ITEM')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'gloves' } });
+
+    await waitFor(() => expect(screen.queryByText('BLOODLINE SET')).not.toBeInTheDocument());
+    expect(screen.getByText('STERILE GLOVES')).toBeInTheDocument();
   });
 });
