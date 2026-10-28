@@ -3,6 +3,7 @@ import {
   ResponsiveWrapper,
   Workspace2,
   launchWorkspace2,
+  showSnackbar,
   useConfig,
   useDebounce,
   useLayoutType,
@@ -34,7 +35,7 @@ export const careSettingUuid = '6f0c9a92-6f24-11e3-af88-005056821db0';
 
 const OrderableConceptSearchWorkspace: React.FC<
   PatientWorkspace2DefinitionProps<OrderableConceptSearchWorkspaceProps, OrderBasketWindowProps>
-> = ({ workspaceProps, groupProps, closeWorkspace }) => {
+> = ({ workspaceProps, groupProps }) => {
   const { order: initialOrder, orderTypeUuid } = workspaceProps;
   const { patient } = groupProps;
   const { t } = useTranslation();
@@ -56,12 +57,18 @@ const OrderableConceptSearchWorkspace: React.FC<
   );
 
   const cancelDrugOrder = useCallback(() => {
-    closeWorkspace().then((didClose) => {
-      if (didClose) {
-        launchWorkspace2('order-basket');
-      }
+    // Swap the window's root workspace back to the order basket directly. Closing this workspace
+    // first would empty the window and tear down the workspace group, leaving the basket
+    // unopenable until a refresh. The swap preserves the current group props.
+    launchWorkspace2('order-basket').catch((err) => {
+      console.error(`Failed to return to the order basket: ${err}`);
+      showSnackbar({
+        title: t('errorLaunchingWorkspace', 'Error launching workspace'),
+        subtitle: err?.message,
+        kind: 'error',
+      });
     });
-  }, [closeWorkspace]);
+  }, [t]);
 
   const openOrderForm = useCallback(
     (order: MedicalSupplyOrderBasketItem) => {
@@ -94,7 +101,6 @@ const OrderableConceptSearchWorkspace: React.FC<
         {currentOrder ? (
           <OrderForm
             initialOrder={currentOrder}
-            closeWorkspace={closeWorkspace}
             setHasUnsavedChanges={setHasUnsavedChanges}
             orderTypeUuid={orderTypeUuid}
             orderableConceptSets={orderableConceptSets}
@@ -103,7 +109,6 @@ const OrderableConceptSearchWorkspace: React.FC<
         ) : (
           <ConceptSearch
             openOrderForm={openOrderForm}
-            closeWorkspace={closeWorkspace}
             orderableConceptSets={orderableConceptSets}
             orderTypeUuid={orderTypeUuid}
             patient={patient}
@@ -115,20 +120,13 @@ const OrderableConceptSearchWorkspace: React.FC<
 };
 
 interface ConceptSearchProps {
-  closeWorkspace: Workspace2DefinitionProps['closeWorkspace'];
   openOrderForm: (search: OrderBasketItem) => void;
   orderTypeUuid: string;
   orderableConceptSets: Array<string>;
   patient: fhir.Patient;
 }
 
-function ConceptSearch({
-  closeWorkspace,
-  orderTypeUuid,
-  openOrderForm,
-  orderableConceptSets,
-  patient,
-}: ConceptSearchProps) {
+function ConceptSearch({ orderTypeUuid, openOrderForm, orderableConceptSets, patient }: ConceptSearchProps) {
   const { t } = useTranslation();
   const { orderType } = useOrderType(orderTypeUuid);
   const isTablet = useLayoutType() === 'tablet';
@@ -137,12 +135,18 @@ function ConceptSearch({
   const searchInputRef = useRef(null);
 
   const cancelDrugOrder = useCallback(() => {
-    closeWorkspace().then((didClose) => {
-      if (didClose) {
-        launchWorkspace2('order-basket');
-      }
+    // Swap the window's root workspace back to the order basket directly. Closing this workspace
+    // first would empty the window and tear down the workspace group, leaving the basket
+    // unopenable until a refresh. The swap preserves the current group props.
+    launchWorkspace2('order-basket').catch((err) => {
+      console.error(`Failed to return to the order basket: ${err}`);
+      showSnackbar({
+        title: t('errorLaunchingWorkspace', 'Error launching workspace'),
+        subtitle: err?.message,
+        kind: 'error',
+      });
     });
-  }, [closeWorkspace]);
+  }, [t]);
 
   const focusAndClearSearchInput = () => {
     setSearchTerm('');
@@ -172,7 +176,6 @@ function ConceptSearch({
         searchTerm={debouncedSearchTerm}
         openOrderForm={openOrderForm}
         focusAndClearSearchInput={focusAndClearSearchInput}
-        closeWorkspace={closeWorkspace}
         orderTypeUuid={orderTypeUuid}
         cancelOrder={() => {}}
         orderableConceptSets={orderableConceptSets}

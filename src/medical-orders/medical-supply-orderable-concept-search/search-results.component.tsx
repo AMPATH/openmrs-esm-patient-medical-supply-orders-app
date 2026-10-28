@@ -9,8 +9,8 @@ import { useTranslation } from 'react-i18next';
 import {
   ArrowRightIcon,
   launchWorkspace2,
+  showSnackbar,
   ShoppingCartArrowDownIcon,
-  type Workspace2DefinitionProps,
   useLayoutType,
   useSession,
 } from '@openmrs/esm-framework';
@@ -28,7 +28,6 @@ interface OrderableConceptSearchResultsProps {
   cancelOrder: () => void;
   orderableConceptSets: Array<string>;
   orderTypeUuid: string;
-  closeWorkspace: Workspace2DefinitionProps['closeWorkspace'];
   patient: fhir.Patient;
 }
 
@@ -39,7 +38,6 @@ const OrderableConceptSearchResults: React.FC<OrderableConceptSearchResultsProps
   cancelOrder,
   orderableConceptSets,
   orderTypeUuid,
-  closeWorkspace,
   patient,
 }) => {
   const { t } = useTranslation();
@@ -91,7 +89,6 @@ const OrderableConceptSearchResults: React.FC<OrderableConceptSearchResultsProps
                 openOrderForm={openOrderForm}
                 concept={concept}
                 orderTypeUuid={orderTypeUuid}
-                closeWorkspace={closeWorkspace}
                 patient={patient}
               />
             ))}
@@ -157,7 +154,6 @@ interface TestTypeSearchResultItemProps {
   concept: OrderableConcept;
   openOrderForm: (searchResult: OrderBasketItem) => void;
   orderTypeUuid: string;
-  closeWorkspace: Workspace2DefinitionProps['closeWorkspace'];
   patient: fhir.Patient;
 }
 
@@ -165,7 +161,6 @@ const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
   concept,
   openOrderForm,
   orderTypeUuid,
-  closeWorkspace,
   patient,
 }) => {
   const { t } = useTranslation();
@@ -189,12 +184,18 @@ const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
     const orderBasketItem = createOrderBasketItem(concept);
     orderBasketItem.isOrderIncomplete = true;
     setOrders([...orders, orderBasketItem]);
-    closeWorkspace({ discardUnsavedChanges: true }).then((didClose) => {
-      if (didClose) {
-        launchWorkspace2('order-basket');
-      }
+    // Swap the window's root workspace back to the order basket directly: closing this
+    // workspace first would empty the window, tear down the workspace group, and leave the
+    // basket unopenable until a refresh. The swap preserves the current group props.
+    launchWorkspace2('order-basket').catch((err) => {
+      console.error(`Failed to return to the order basket: ${err}`);
+      showSnackbar({
+        title: t('errorLaunchingWorkspace', 'Error launching workspace'),
+        subtitle: err?.message,
+        kind: 'error',
+      });
     });
-  }, [orders, setOrders, createOrderBasketItem, concept, closeWorkspace]);
+  }, [orders, setOrders, createOrderBasketItem, concept, t]);
 
   const removeFromBasket = useCallback(() => {
     setOrders(orders.filter((order) => order?.concept?.uuid !== concept?.uuid));
