@@ -45,6 +45,8 @@ const medicalSuppliesSet = {
   ],
 };
 
+const openChildWorkspace = jest.fn();
+
 jest.mock('@openmrs/esm-framework', () => {
   const actual = jest.requireActual('@openmrs/esm-framework');
   return {
@@ -55,6 +57,7 @@ jest.mock('@openmrs/esm-framework', () => {
     useSession: jest.fn(() => sessionState),
     openmrsFetch: jest.fn(() => Promise.resolve({ data: medicalSuppliesSet })),
     restBaseUrl: '/ws/rest/v1',
+    useWorkspace2Store: jest.fn(() => ({ openChildWorkspace })),
   };
 });
 
@@ -103,12 +106,26 @@ const workspacePropsBase = {
 };
 
 describe('medical supply order basket click path', () => {
-  it('renders the panel and opens the workspace on Add click', async () => {
-    const { launchWorkspace2 } = require('@openmrs/esm-framework');
+  it('renders the panel and opens the workspace as a child of the order basket on Add click', async () => {
+    openChildWorkspace.mockClear();
 
     render(<MedicalSupplyOrderPanel patient={patient} />);
     expect(screen.getByText(/Medical Supply/i)).toBeInTheDocument();
 
+    const addButtons = screen.getAllByRole('button', { name: /add/i });
+    fireEvent.click(addButtons[0]);
+    expect(openChildWorkspace).toHaveBeenCalledWith('order-basket', 'medical-supply-orderable-concept-workspace', {
+      orderTypeUuid: 'ot-1',
+    });
+  });
+
+  it('falls back to a root launch when the child launch throws', async () => {
+    const { launchWorkspace2 } = require('@openmrs/esm-framework');
+    openChildWorkspace.mockImplementationOnce(() => {
+      throw new Error('window not opened');
+    });
+
+    render(<MedicalSupplyOrderPanel patient={patient} />);
     const addButtons = screen.getAllByRole('button', { name: /add/i });
     fireEvent.click(addButtons[0]);
     await waitFor(() =>
@@ -184,13 +201,15 @@ describe('medical supply order basket click path', () => {
     expect(screen.getByText('STERILE GLOVES')).toBeInTheDocument();
   });
 
-  it('returns to the order basket by swapping the root workspace, without closing the workspace first', async () => {
+  it('returns to the order basket by closing first, then relaunching it with the window and group props', async () => {
     const { launchWorkspace2 } = require('@openmrs/esm-framework');
     const closeWorkspace = jest.fn(() => Promise.resolve(true));
+    const windowProps = { someWindowProp: 'window-props' };
 
     render(
       <OrderableConceptSearchWorkspace
         {...(workspacePropsBase as any)}
+        windowProps={windowProps}
         workspaceProps={{ orderTypeUuid: 'ot-1' }}
         groupProps={groupProps as any}
         closeWorkspace={closeWorkspace}
@@ -201,17 +220,21 @@ describe('medical supply order basket click path', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /back to order basket/i }));
 
-    await waitFor(() => expect(launchWorkspace2).toHaveBeenCalledWith('order-basket'));
-    expect(closeWorkspace).not.toHaveBeenCalled();
+    // Close happens first; the basket is relaunched with the captured window + group props so
+    // it reattaches to the live patient-chart workspace group.
+    await waitFor(() => expect(closeWorkspace).toHaveBeenCalled());
+    await waitFor(() => expect(launchWorkspace2).toHaveBeenCalledWith('order-basket', null, windowProps, groupProps));
   });
 
-  it('adds a search result to the basket and swaps back to the order basket without closing first', async () => {
+  it('adds a search result to the basket, closes, and relaunches the order basket with props', async () => {
     const { launchWorkspace2 } = require('@openmrs/esm-framework');
     const closeWorkspace = jest.fn(() => Promise.resolve(true));
+    const windowProps = { someWindowProp: 'window-props' };
 
     render(
       <OrderableConceptSearchWorkspace
         {...(workspacePropsBase as any)}
+        windowProps={windowProps}
         workspaceProps={{ orderTypeUuid: 'ot-1' }}
         groupProps={groupProps as any}
         closeWorkspace={closeWorkspace}
@@ -222,7 +245,7 @@ describe('medical supply order basket click path', () => {
 
     fireEvent.click(screen.getAllByRole('button', { name: /add to basket/i })[0]);
 
-    await waitFor(() => expect(launchWorkspace2).toHaveBeenCalledWith('order-basket'));
-    expect(closeWorkspace).not.toHaveBeenCalled();
+    await waitFor(() => expect(closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true }));
+    await waitFor(() => expect(launchWorkspace2).toHaveBeenCalledWith('order-basket', null, windowProps, groupProps));
   });
 });

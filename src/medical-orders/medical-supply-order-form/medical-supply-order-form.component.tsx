@@ -7,8 +7,7 @@ import {
   useConfig,
   ExtensionSlot,
   OpenmrsDatePicker,
-  launchWorkspace2,
-  showSnackbar,
+  type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
 import {
   Button,
@@ -39,6 +38,7 @@ export interface OrderFormProps {
   initialOrder: MedicalSupplyOrderBasketItem;
   orderTypeUuid: string;
   orderableConceptSets: Array<string>;
+  returnToOrderBasket: Workspace2DefinitionProps['closeWorkspace'];
   setHasUnsavedChanges: (hasUnsavedChanges: boolean) => void;
   patient: fhir.Patient;
 }
@@ -46,7 +46,13 @@ export interface OrderFormProps {
 // Designs:
 //   https://app.zeplin.io/project/60d5947dd636aebbd63dce4c/screen/640b06c440ee3f7af8747620
 //   https://app.zeplin.io/project/60d5947dd636aebbd63dce4c/screen/640b06d286e0aa7b0316db4a
-export function OrderForm({ initialOrder, setHasUnsavedChanges, patient, orderTypeUuid }: OrderFormProps) {
+export function OrderForm({
+  initialOrder,
+  returnToOrderBasket,
+  setHasUnsavedChanges,
+  patient,
+  orderTypeUuid,
+}: OrderFormProps) {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
@@ -114,22 +120,6 @@ export function OrderForm({ initialOrder, setHasUnsavedChanges, patient, orderTy
 
   const isScheduledDateRequired = watch('urgency') === 'ON_SCHEDULED_DATE';
 
-  const returnToOrderBasket = useCallback(() => {
-    // Clear the unsaved-changes flag so the swap below doesn't prompt, then swap the window's
-    // root workspace back to the order basket directly. Closing this workspace first would
-    // empty the window, tear down the workspace group, and leave the basket unopenable
-    // until a refresh. The swap preserves the current group props.
-    setHasUnsavedChanges(false);
-    launchWorkspace2('order-basket').catch((err) => {
-      console.error(`Failed to return to the order basket: ${err}`);
-      showSnackbar({
-        title: t('errorLaunchingWorkspace', 'Error launching workspace'),
-        subtitle: err?.message,
-        kind: 'error',
-      });
-    });
-  }, [setHasUnsavedChanges, t]);
-
   const handleFormSubmission = useCallback(
     (data: MedicalSupplyOrderBasketItem) => {
       const finalizedOrder: MedicalSupplyOrderBasketItem = {
@@ -152,15 +142,18 @@ export function OrderForm({ initialOrder, setHasUnsavedChanges, patient, orderTy
       }
 
       setOrders(newOrders);
-      returnToOrderBasket();
+      returnToOrderBasket({ discardUnsavedChanges: true });
     },
     [orders, setOrders, session?.currentProvider?.uuid, returnToOrderBasket, initialOrder],
   );
 
   const cancelOrder = useCallback(() => {
-    setOrders(orders.filter((order) => order.concept.uuid !== defaultValues.concept.uuid));
-    returnToOrderBasket();
-  }, [orders, setOrders, defaultValues, returnToOrderBasket]);
+    returnToOrderBasket().then((didClose) => {
+      if (didClose) {
+        setOrders(orders.filter((order) => order.concept.uuid !== defaultValues.concept.uuid));
+      }
+    });
+  }, [returnToOrderBasket, orders, setOrders, defaultValues]);
 
   const onError = (errors: FieldErrors<MedicalSupplyOrderBasketItem>) => {
     if (errors) {
