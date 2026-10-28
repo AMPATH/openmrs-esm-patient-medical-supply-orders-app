@@ -183,4 +183,46 @@ describe('medical supply order basket click path', () => {
     await waitFor(() => expect(screen.queryByText('BLOODLINE SET')).not.toBeInTheDocument());
     expect(screen.getByText('STERILE GLOVES')).toBeInTheDocument();
   });
+
+  it('returns to the order basket by swapping the root workspace, without closing the workspace first', async () => {
+    const { launchWorkspace2 } = require('@openmrs/esm-framework');
+    const closeWorkspace = jest.fn(() => Promise.resolve(true));
+
+    render(
+      <OrderableConceptSearchWorkspace
+        {...(workspacePropsBase as any)}
+        workspaceProps={{ orderTypeUuid: 'ot-1' }}
+        groupProps={groupProps as any}
+        closeWorkspace={closeWorkspace}
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByText('DIALYZER SUPPLY ITEM')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: /back to order basket/i }));
+
+    await waitFor(() => expect(launchWorkspace2).toHaveBeenCalledWith('order-basket'));
+    expect(closeWorkspace).not.toHaveBeenCalled();
+  });
+
+  it('adds a search result to the basket and swaps back to the order basket without closing first', async () => {
+    const { launchWorkspace2 } = require('@openmrs/esm-framework');
+    const closeWorkspace = jest.fn(() => Promise.resolve(true));
+
+    render(
+      <OrderableConceptSearchWorkspace
+        {...(workspacePropsBase as any)}
+        workspaceProps={{ orderTypeUuid: 'ot-1' }}
+        groupProps={groupProps as any}
+        closeWorkspace={closeWorkspace}
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByText('STERILE GLOVES')).toBeInTheDocument());
+
+    fireEvent.click(screen.getAllByRole('button', { name: /add to basket/i })[0]);
+
+    await waitFor(() => expect(launchWorkspace2).toHaveBeenCalledWith('order-basket'));
+    expect(closeWorkspace).not.toHaveBeenCalled();
+  });
 });

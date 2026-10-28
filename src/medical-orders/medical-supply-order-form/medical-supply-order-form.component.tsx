@@ -8,7 +8,7 @@ import {
   ExtensionSlot,
   OpenmrsDatePicker,
   launchWorkspace2,
-  type Workspace2DefinitionProps,
+  showSnackbar,
 } from '@openmrs/esm-framework';
 import {
   Button,
@@ -39,7 +39,6 @@ export interface OrderFormProps {
   initialOrder: MedicalSupplyOrderBasketItem;
   orderTypeUuid: string;
   orderableConceptSets: Array<string>;
-  closeWorkspace: Workspace2DefinitionProps['closeWorkspace'];
   setHasUnsavedChanges: (hasUnsavedChanges: boolean) => void;
   patient: fhir.Patient;
 }
@@ -47,13 +46,7 @@ export interface OrderFormProps {
 // Designs:
 //   https://app.zeplin.io/project/60d5947dd636aebbd63dce4c/screen/640b06c440ee3f7af8747620
 //   https://app.zeplin.io/project/60d5947dd636aebbd63dce4c/screen/640b06d286e0aa7b0316db4a
-export function OrderForm({
-  initialOrder,
-  closeWorkspace,
-  setHasUnsavedChanges,
-  patient,
-  orderTypeUuid,
-}: OrderFormProps) {
+export function OrderForm({ initialOrder, setHasUnsavedChanges, patient, orderTypeUuid }: OrderFormProps) {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
@@ -121,13 +114,29 @@ export function OrderForm({
 
   const isScheduledDateRequired = watch('urgency') === 'ON_SCHEDULED_DATE';
 
+  const returnToOrderBasket = useCallback(() => {
+    // Clear the unsaved-changes flag so the swap below doesn't prompt, then swap the window's
+    // root workspace back to the order basket directly. Closing this workspace first would
+    // empty the window, tear down the workspace group, and leave the basket unopenable
+    // until a refresh. The swap preserves the current group props.
+    setHasUnsavedChanges(false);
+    launchWorkspace2('order-basket').catch((err) => {
+      console.error(`Failed to return to the order basket: ${err}`);
+      showSnackbar({
+        title: t('errorLaunchingWorkspace', 'Error launching workspace'),
+        subtitle: err?.message,
+        kind: 'error',
+      });
+    });
+  }, [setHasUnsavedChanges, t]);
+
   const handleFormSubmission = useCallback(
     (data: MedicalSupplyOrderBasketItem) => {
       const finalizedOrder: MedicalSupplyOrderBasketItem = {
         ...initialOrder,
         ...data,
       };
-      finalizedOrder.orderer = session.currentProvider.uuid;
+      finalizedOrder.orderer = session.currentProvider?.uuid;
 
       const newOrders = [...orders];
       const existingOrder = orders.find((order) => ordersEqual(order, finalizedOrder));
@@ -143,24 +152,15 @@ export function OrderForm({
       }
 
       setOrders(newOrders);
-
-      closeWorkspace({ discardUnsavedChanges: true }).then((didClose) => {
-        if (didClose) {
-          launchWorkspace2('order-basket');
-        }
-      });
+      returnToOrderBasket();
     },
-    [orders, setOrders, session?.currentProvider?.uuid, closeWorkspace, initialOrder],
+    [orders, setOrders, session?.currentProvider?.uuid, returnToOrderBasket, initialOrder],
   );
 
   const cancelOrder = useCallback(() => {
     setOrders(orders.filter((order) => order.concept.uuid !== defaultValues.concept.uuid));
-    closeWorkspace().then((didClose) => {
-      if (didClose) {
-        launchWorkspace2('order-basket');
-      }
-    });
-  }, [closeWorkspace, orders, setOrders, defaultValues]);
+    returnToOrderBasket();
+  }, [orders, setOrders, defaultValues, returnToOrderBasket]);
 
   const onError = (errors: FieldErrors<MedicalSupplyOrderBasketItem>) => {
     if (errors) {
