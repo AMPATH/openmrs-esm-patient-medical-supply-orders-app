@@ -24,7 +24,10 @@ export function createEmptyOrder(concept: OrderableConcept, orderer: string): Me
   return {
     action: 'NEW',
     urgency: priorityOptions[0].value as OrderUrgency,
-    display: concept.label,
+    // The concept resources from the search expose `display` (there is no `label` field). The
+    // basket's success toast groups items by action and names them by `display`; an undefined
+    // display made every new order announce itself as "Orders discontinued".
+    display: concept.display ?? concept.label,
     concept,
     orderer,
     visit: null,

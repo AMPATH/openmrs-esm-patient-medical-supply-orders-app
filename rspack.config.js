@@ -9,7 +9,10 @@ config.scriptRuleConfig.exclude = /node_modules\/(?!@openmrs\/esm-patient-common
 // which trips the watcher and makes webpack-dev-server force a full page
 // reload (e.g. clicking "Order basket" reloaded the whole chart in dev).
 // The dev middleware already serves everything from memory, so the static
-// directory is redundant — disable it.
-config.devServer.static = false;
+// directory is redundant — disable it. The devServer config object only
+// exists in development builds, hence the guard.
+if (config.devServer) {
+  config.devServer.static = false;
+}
 
 module.exports = config;
