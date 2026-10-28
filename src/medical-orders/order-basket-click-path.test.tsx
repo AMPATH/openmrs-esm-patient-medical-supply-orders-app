@@ -45,6 +45,8 @@ const medicalSuppliesSet = {
   ],
 };
 
+const openChildWorkspace = jest.fn();
+
 jest.mock('@openmrs/esm-framework', () => {
   const actual = jest.requireActual('@openmrs/esm-framework');
   return {
@@ -55,6 +57,7 @@ jest.mock('@openmrs/esm-framework', () => {
     useSession: jest.fn(() => sessionState),
     openmrsFetch: jest.fn(() => Promise.resolve({ data: medicalSuppliesSet })),
     restBaseUrl: '/ws/rest/v1',
+    useWorkspace2Store: jest.fn(() => ({ openChildWorkspace })),
   };
 });
 
@@ -103,12 +106,26 @@ const workspacePropsBase = {
 };
 
 describe('medical supply order basket click path', () => {
-  it('renders the panel and opens the workspace on Add click', async () => {
-    const { launchWorkspace2 } = require('@openmrs/esm-framework');
+  it('renders the panel and opens the workspace as a child of the order basket on Add click', async () => {
+    openChildWorkspace.mockClear();
 
     render(<MedicalSupplyOrderPanel patient={patient} />);
     expect(screen.getByText(/Medical Supply/i)).toBeInTheDocument();
 
+    const addButtons = screen.getAllByRole('button', { name: /add/i });
+    fireEvent.click(addButtons[0]);
+    expect(openChildWorkspace).toHaveBeenCalledWith('order-basket', 'medical-supply-orderable-concept-workspace', {
+      orderTypeUuid: 'ot-1',
+    });
+  });
+
+  it('falls back to a root launch when the child launch throws', async () => {
+    const { launchWorkspace2 } = require('@openmrs/esm-framework');
+    openChildWorkspace.mockImplementationOnce(() => {
+      throw new Error('window not opened');
+    });
+
+    render(<MedicalSupplyOrderPanel patient={patient} />);
     const addButtons = screen.getAllByRole('button', { name: /add/i });
     fireEvent.click(addButtons[0]);
     await waitFor(() =>

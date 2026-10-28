@@ -12,7 +12,26 @@ import {
   useLayoutType,
 } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
+import * as esmFramework from '@openmrs/esm-framework';
 import { type OrderBasketExtensionProps, useOrderBasket, useOrderType } from '@openmrs/esm-patient-common-lib';
+
+interface Workspace2StoreActions {
+  openChildWorkspace(
+    parentWorkspaceName: string,
+    childWorkspaceName: string,
+    childWorkspaceProps: Record<string, unknown>,
+  ): void;
+}
+
+/**
+ * The workspace2 store is exposed on the framework at runtime (useWorkspace2Store) but is not
+ * part of the typed public API, hence the defensive lookup.
+ */
+function getWorkspace2StoreActions(): Workspace2StoreActions | null {
+  const hook = (esmFramework as unknown as Record<string, unknown>).useWorkspace2Store as
+    (() => Workspace2StoreActions | null) | undefined;
+  return typeof hook === 'function' ? hook() : null;
+}
 import OrderBasketItemTile from './order-basket-item-tile.component';
 import { prepOrderPostData } from './resources';
 import { type ConfigObject } from '../config-schema';
@@ -44,6 +63,7 @@ const MedicalSupplyOrderType: React.FC<MedicalSupplyOrderTypeProps> = ({ orderTy
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const { orderType, isLoadingOrderType } = useOrderType(orderTypeUuid);
+  const workspace2Actions = getWorkspace2StoreActions();
 
   const { orders, setOrders } = useOrderBasket<MedicalSupplyOrderBasketItem>(patient, orderTypeUuid, prepOrderPostData);
   const [isExpanded, setIsExpanded] = useState(orders.length > 0);
@@ -83,10 +103,25 @@ const MedicalSupplyOrderType: React.FC<MedicalSupplyOrderTypeProps> = ({ orderTy
     };
   }, [orders]);
 
-  const openConceptSearch = () => {
-    launchWorkspace2('medical-supply-orderable-concept-workspace', {
-      orderTypeUuid,
-    }).catch((err) => {
+  // Open the search as a CHILD of the order basket root whenever possible (the reference
+  // pattern for basket tiles). A root launch evicts the basket from its window, and while the
+  // search is the window's root, launching the basket again (e.g. via the cart button) makes
+  // the framework append a duplicate window entry, which blanks the workspace layer until a
+  // page refresh. Child launches keep the basket root in place, so the window never breaks.
+  const launchSearchWorkspace = (workspaceProps: { order?: MedicalSupplyOrderBasketItem; orderTypeUuid: string }) => {
+    if (workspace2Actions?.openChildWorkspace) {
+      try {
+        workspace2Actions.openChildWorkspace(
+          'order-basket',
+          'medical-supply-orderable-concept-workspace',
+          workspaceProps,
+        );
+        return;
+      } catch (err) {
+        console.warn('Child workspace launch failed; falling back to a root launch', err);
+      }
+    }
+    launchWorkspace2('medical-supply-orderable-concept-workspace', workspaceProps).catch((err) => {
       console.error(`Failed to launch medical-supply-orderable-concept-workspace: ${err}`);
       showSnackbar({
         title: t('errorLaunchingWorkspace', 'Error launching workspace'),
@@ -96,18 +131,12 @@ const MedicalSupplyOrderType: React.FC<MedicalSupplyOrderTypeProps> = ({ orderTy
     });
   };
 
+  const openConceptSearch = () => {
+    launchSearchWorkspace({ orderTypeUuid });
+  };
+
   const openOrderForm = (order: MedicalSupplyOrderBasketItem) => {
-    launchWorkspace2('medical-supply-orderable-concept-workspace', {
-      order,
-      orderTypeUuid,
-    }).catch((err) => {
-      console.error(`Failed to launch medical-supply-orderable-concept-workspace: ${err}`);
-      showSnackbar({
-        title: t('errorLaunchingWorkspace', 'Error launching workspace'),
-        subtitle: err?.message,
-        kind: 'error',
-      });
-    });
+    launchSearchWorkspace({ order, orderTypeUuid });
   };
 
   const removeOrder = useCallback(
