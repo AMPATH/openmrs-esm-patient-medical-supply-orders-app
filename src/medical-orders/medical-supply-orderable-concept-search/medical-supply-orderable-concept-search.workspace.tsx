@@ -35,7 +35,7 @@ export const careSettingUuid = '6f0c9a92-6f24-11e3-af88-005056821db0';
 
 const OrderableConceptSearchWorkspace: React.FC<
   PatientWorkspace2DefinitionProps<OrderableConceptSearchWorkspaceProps, OrderBasketWindowProps>
-> = ({ workspaceProps, groupProps }) => {
+> = ({ workspaceProps, windowProps, groupProps, closeWorkspace }) => {
   const { order: initialOrder, orderTypeUuid } = workspaceProps;
   const { patient } = groupProps;
   const { t } = useTranslation();
@@ -56,19 +56,28 @@ const OrderableConceptSearchWorkspace: React.FC<
     [orderTypeUuid, orderTypes],
   );
 
-  const cancelDrugOrder = useCallback(() => {
-    // Swap the window's root workspace back to the order basket directly. Closing this workspace
-    // first would empty the window and tear down the workspace group, leaving the basket
-    // unopenable until a refresh. The swap preserves the current group props.
-    launchWorkspace2('order-basket').catch((err) => {
-      console.error(`Failed to return to the order basket: ${err}`);
-      showSnackbar({
-        title: t('errorLaunchingWorkspace', 'Error launching workspace'),
-        subtitle: err?.message,
-        kind: 'error',
-      });
-    });
-  }, [t]);
+  // Close this workspace first, then relaunch the order basket with the window and group
+  // props this workspace was launched with. Passing them explicitly is what keeps the
+  // relaunched basket attached to the live patient-chart workspace group; launching it
+  // without them (or swapping roots in place) breaks the window bookkeeping and blanks
+  // the workspace layer until a page refresh.
+  const returnToOrderBasket = useCallback(
+    async (options?: Parameters<Workspace2DefinitionProps['closeWorkspace']>[0]) => {
+      const didClose = await closeWorkspace(options);
+      if (didClose) {
+        await launchWorkspace2('order-basket', null, windowProps, groupProps).catch((err) => {
+          console.error(`Failed to return to the order basket: ${err}`);
+          showSnackbar({
+            title: t('errorLaunchingWorkspace', 'Error launching workspace'),
+            subtitle: err?.message,
+            kind: 'error',
+          });
+        });
+      }
+      return didClose;
+    },
+    [closeWorkspace, windowProps, groupProps, t],
+  );
 
   const openOrderForm = useCallback(
     (order: MedicalSupplyOrderBasketItem) => {
@@ -90,7 +99,7 @@ const OrderableConceptSearchWorkspace: React.FC<
             <Button
               iconDescription="Return to order basket"
               kind="ghost"
-              onClick={cancelDrugOrder}
+              onClick={() => returnToOrderBasket()}
               renderIcon={(props: ComponentProps<typeof ArrowLeftIcon>) => <ArrowLeftIcon size={24} {...props} />}
               size="sm"
             >
@@ -101,6 +110,7 @@ const OrderableConceptSearchWorkspace: React.FC<
         {currentOrder ? (
           <OrderForm
             initialOrder={currentOrder}
+            returnToOrderBasket={returnToOrderBasket}
             setHasUnsavedChanges={setHasUnsavedChanges}
             orderTypeUuid={orderTypeUuid}
             orderableConceptSets={orderableConceptSets}
@@ -109,6 +119,7 @@ const OrderableConceptSearchWorkspace: React.FC<
         ) : (
           <ConceptSearch
             openOrderForm={openOrderForm}
+            returnToOrderBasket={returnToOrderBasket}
             orderableConceptSets={orderableConceptSets}
             orderTypeUuid={orderTypeUuid}
             patient={patient}
@@ -120,33 +131,26 @@ const OrderableConceptSearchWorkspace: React.FC<
 };
 
 interface ConceptSearchProps {
+  returnToOrderBasket: Workspace2DefinitionProps['closeWorkspace'];
   openOrderForm: (search: OrderBasketItem) => void;
   orderTypeUuid: string;
   orderableConceptSets: Array<string>;
   patient: fhir.Patient;
 }
 
-function ConceptSearch({ orderTypeUuid, openOrderForm, orderableConceptSets, patient }: ConceptSearchProps) {
+function ConceptSearch({
+  returnToOrderBasket,
+  orderTypeUuid,
+  openOrderForm,
+  orderableConceptSets,
+  patient,
+}: ConceptSearchProps) {
   const { t } = useTranslation();
   const { orderType } = useOrderType(orderTypeUuid);
   const isTablet = useLayoutType() === 'tablet';
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const searchInputRef = useRef(null);
-
-  const cancelDrugOrder = useCallback(() => {
-    // Swap the window's root workspace back to the order basket directly. Closing this workspace
-    // first would empty the window and tear down the workspace group, leaving the basket
-    // unopenable until a refresh. The swap preserves the current group props.
-    launchWorkspace2('order-basket').catch((err) => {
-      console.error(`Failed to return to the order basket: ${err}`);
-      showSnackbar({
-        title: t('errorLaunchingWorkspace', 'Error launching workspace'),
-        subtitle: err?.message,
-        kind: 'error',
-      });
-    });
-  }, [t]);
 
   const focusAndClearSearchInput = () => {
     setSearchTerm('');
@@ -176,6 +180,7 @@ function ConceptSearch({ orderTypeUuid, openOrderForm, orderableConceptSets, pat
         searchTerm={debouncedSearchTerm}
         openOrderForm={openOrderForm}
         focusAndClearSearchInput={focusAndClearSearchInput}
+        returnToOrderBasket={returnToOrderBasket}
         orderTypeUuid={orderTypeUuid}
         cancelOrder={() => {}}
         orderableConceptSets={orderableConceptSets}
@@ -184,7 +189,7 @@ function ConceptSearch({ orderTypeUuid, openOrderForm, orderableConceptSets, pat
       {isTablet && (
         <div className={styles.separatorContainer}>
           <p className={styles.separator}>{t('or', 'or')}</p>
-          <Button iconDescription="Return to order basket" kind="ghost" onClick={cancelDrugOrder}>
+          <Button iconDescription="Return to order basket" kind="ghost" onClick={() => returnToOrderBasket()}>
             {t('returnToOrderBasket', 'Return to order basket')}
           </Button>
         </div>
