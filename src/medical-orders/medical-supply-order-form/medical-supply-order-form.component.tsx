@@ -127,6 +127,9 @@ export function OrderForm({
         ...data,
       };
       finalizedOrder.orderer = session.currentProvider?.uuid;
+      // Items added to the basket before the order type was set on creation have none; fill it
+      // from the tile they belong to so every posted order names its order type.
+      finalizedOrder.orderType = finalizedOrder.orderType ?? orderTypeUuid;
 
       const newOrders = [...orders];
       const existingOrder = orders.find((order) => ordersEqual(order, finalizedOrder));
@@ -144,7 +147,7 @@ export function OrderForm({
       setOrders(newOrders);
       returnToOrderBasket({ discardUnsavedChanges: true });
     },
-    [orders, setOrders, session?.currentProvider?.uuid, returnToOrderBasket, initialOrder],
+    [orders, setOrders, session?.currentProvider?.uuid, returnToOrderBasket, initialOrder, orderTypeUuid],
   );
 
   const cancelOrder = useCallback(() => {

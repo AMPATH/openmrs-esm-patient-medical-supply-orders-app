@@ -4,7 +4,7 @@
  */
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { useConfig } from '@openmrs/esm-framework';
+import { getGlobalStore, useConfig } from '@openmrs/esm-framework';
 import OrderableConceptSearchWorkspace from './medical-supply-orderable-concept-search/medical-supply-orderable-concept-search.workspace';
 import MedicalSupplyOrderPanel from './medical-supply-order-type.component';
 
@@ -247,5 +247,12 @@ describe('medical supply order basket click path', () => {
 
     await waitFor(() => expect(closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true }));
     await waitFor(() => expect(launchWorkspace2).toHaveBeenCalledWith('order-basket', null, windowProps, groupProps));
+
+    // The new basket item carries the tile's order type, so the posted order names it explicitly.
+    const basketItems = Object.values(
+      (getGlobalStore('order-basket').getState() as { items: Record<string, Record<string, Array<any>>> }).items,
+    ).flatMap((groups) => Object.values(groups).flat());
+    expect(basketItems.length).toBeGreaterThan(0);
+    expect(basketItems.every((item) => item.orderType === 'ot-1')).toBe(true);
   });
 });

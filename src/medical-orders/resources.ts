@@ -20,7 +20,11 @@ import useSWRImmutable from 'swr/immutable';
 import { useEffect, useMemo } from 'react';
 import { type ConfigObject } from '../config-schema';
 
-export function createEmptyOrder(concept: OrderableConcept, orderer: string): MedicalSupplyOrderBasketItem {
+export function createEmptyOrder(
+  concept: OrderableConcept,
+  orderer: string,
+  orderTypeUuid: string,
+): MedicalSupplyOrderBasketItem {
   return {
     action: 'NEW',
     urgency: priorityOptions[0].value as OrderUrgency,
@@ -30,6 +34,9 @@ export function createEmptyOrder(concept: OrderableConcept, orderer: string): Me
     display: concept.display ?? concept.label,
     concept,
     orderer,
+    // Always post the order type explicitly. Without it the backend infers the type from the
+    // concept's class, which can file an order under the wrong commodity's order type.
+    orderType: orderTypeUuid,
     visit: null,
   };
 }
