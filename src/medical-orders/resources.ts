@@ -20,10 +20,19 @@ import useSWRImmutable from 'swr/immutable';
 import { useEffect, useMemo } from 'react';
 import { type ConfigObject } from '../config-schema';
 
+export const DEFAULT_REST_TYPE = 'medicalsupplyorder';
+
+/** The config entry for an order type in the basket, if it is configured. */
+export function useOrderTypeConfig(orderTypeUuid: string) {
+  const { orderTypes } = useConfig<ConfigObject>();
+  return useMemo(() => orderTypes?.find((entry) => entry.orderTypeUuid === orderTypeUuid), [orderTypes, orderTypeUuid]);
+}
+
 export function createEmptyOrder(
   concept: OrderableConcept,
   orderer: string,
   orderTypeUuid: string,
+  restType: string = DEFAULT_REST_TYPE,
 ): MedicalSupplyOrderBasketItem {
   return {
     action: 'NEW',
@@ -37,6 +46,7 @@ export function createEmptyOrder(
     // Always post the order type explicitly. Without it the backend infers the type from the
     // concept's class, which can file an order under the wrong commodity's order type.
     orderType: orderTypeUuid,
+    restType,
     visit: null,
   };
 }
@@ -60,7 +70,7 @@ export function prepOrderPostData(
   if (order.action === 'NEW' || order.action === 'RENEW') {
     return {
       action: 'NEW',
-      type: 'medicalsupplyorder',
+      type: order.restType ?? DEFAULT_REST_TYPE,
       patient: patientUuid,
       careSetting: careSettingUuid,
       orderer: order.orderer,
@@ -78,7 +88,7 @@ export function prepOrderPostData(
   } else if (order.action === 'REVISE') {
     return {
       action: 'REVISE',
-      type: 'medicalsupplyorder',
+      type: order.restType ?? DEFAULT_REST_TYPE,
       patient: patientUuid,
       careSetting: order.careSetting,
       orderer: order.orderer,
@@ -96,7 +106,7 @@ export function prepOrderPostData(
   } else if (order.action === 'DISCONTINUE') {
     return {
       action: 'DISCONTINUE',
-      type: 'medicalsupplyorder',
+      type: order.restType ?? DEFAULT_REST_TYPE,
       patient: patientUuid,
       careSetting: order.careSetting,
       orderer: order.orderer,
@@ -118,11 +128,15 @@ export interface Concept extends OpenmrsResource {
   answers: Array<Concept>;
 }
 
-export function useQuantityUnits() {
+/** Quantity units for an order type: its own units concept if configured, else the global one. */
+export function useQuantityUnits(orderTypeUuid?: string) {
   const config = useConfig<ConfigObject>();
   const { quantityUnits } = config;
+  const unitsConceptUuid =
+    config.orderTypes?.find((entry) => entry.orderTypeUuid === orderTypeUuid)?.quantityUnitsConceptUuid ||
+    quantityUnits?.conceptUuid;
   const { data, isLoading, isValidating, error } = useSWRImmutable<FetchResponse<Concept>>(
-    quantityUnits?.conceptUuid ? `${restBaseUrl}/concept/${quantityUnits.conceptUuid}` : null,
+    unitsConceptUuid ? `${restBaseUrl}/concept/${unitsConceptUuid}` : null,
     openmrsFetch,
   );
 
@@ -157,6 +171,7 @@ export function buildMedicalSupplyOrderItem(order: Order, action: OrderAction): 
     concept: order.concept,
     orderNumber: order.orderNumber,
     orderType: order.orderType.uuid,
+    restType: order.type ?? DEFAULT_REST_TYPE,
     quantity: order.quantity,
     quantityUnits: order.quantityUnits,
     scheduledDate: order.scheduledDate ? new Date(order.scheduledDate) : null,
