@@ -30,7 +30,7 @@ import { Controller, type ControllerRenderProps, type FieldErrors, useForm } fro
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import styles from './medical-supply-order-form.scss';
-import { type Concept, ordersEqual, prepOrderPostData, useQuantityUnits } from '../resources';
+import { type Concept, ordersEqual, prepOrderPostData, useOrderTypeConfig, useQuantityUnits } from '../resources';
 import { type MedicalSupplyOrderBasketItem } from '../types';
 import { type ConfigObject } from '../../config-schema';
 
@@ -60,7 +60,8 @@ export function OrderForm({
   const { orders, setOrders } = useOrderBasket<MedicalSupplyOrderBasketItem>(patient, orderTypeUuid, prepOrderPostData);
   const [showErrorNotification, setShowErrorNotification] = useState(false);
   const { orderType } = useOrderType(orderTypeUuid);
-  const { concepts, isLoadingQuantityUnits, errorFetchingQuantityUnits } = useQuantityUnits();
+  const orderTypeConfig = useOrderTypeConfig(orderTypeUuid);
+  const { concepts, isLoadingQuantityUnits, errorFetchingQuantityUnits } = useQuantityUnits(orderTypeUuid);
   const { showReferenceNumberField } = useConfig<ConfigObject>();
 
   const OrderFormSchema = useMemo(
@@ -130,6 +131,7 @@ export function OrderForm({
       // Items added to the basket before the order type was set on creation have none; fill it
       // from the tile they belong to so every posted order names its order type.
       finalizedOrder.orderType = finalizedOrder.orderType ?? orderTypeUuid;
+      finalizedOrder.restType = finalizedOrder.restType ?? orderTypeConfig?.restType;
 
       const newOrders = [...orders];
       const existingOrder = orders.find((order) => ordersEqual(order, finalizedOrder));
@@ -147,7 +149,15 @@ export function OrderForm({
       setOrders(newOrders);
       returnToOrderBasket({ discardUnsavedChanges: true });
     },
-    [orders, setOrders, session?.currentProvider?.uuid, returnToOrderBasket, initialOrder, orderTypeUuid],
+    [
+      orders,
+      setOrders,
+      session?.currentProvider?.uuid,
+      returnToOrderBasket,
+      initialOrder,
+      orderTypeUuid,
+      orderTypeConfig?.restType,
+    ],
   );
 
   const cancelOrder = useCallback(() => {

@@ -171,7 +171,7 @@ const MedicalSupplyOrderType: React.FC<MedicalSupplyOrderTypeProps> = ({ orderTy
             className={styles.addButton}
             kind="ghost"
             renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
-            iconDescription="Add medication"
+            iconDescription={t('add', 'Add')}
             onClick={openConceptSearch}
             size={isTablet ? 'md' : 'sm'}
           >

@@ -18,7 +18,7 @@ import { useMemo } from 'react';
 import classNames from 'classnames';
 import { Tile, Button, SkeletonText, ButtonSkeleton } from '@carbon/react';
 import styles from './search-results.scss';
-import { createEmptyOrder, prepOrderPostData } from '../resources';
+import { createEmptyOrder, prepOrderPostData, useOrderTypeConfig } from '../resources';
 
 interface OrderableConceptSearchResultsProps {
   searchTerm: string;
@@ -170,6 +170,7 @@ const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
+  const orderTypeConfig = useOrderTypeConfig(orderTypeUuid);
   const { orders, setOrders } = useOrderBasket<OrderBasketItem>(patient, orderTypeUuid, prepOrderPostData);
 
   const orderAlreadyInBasket = useMemo(
@@ -179,9 +180,9 @@ const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
 
   const createOrderBasketItem = useCallback(
     (testType: OrderableConcept) => {
-      return createEmptyOrder(testType, session.currentProvider?.uuid, orderTypeUuid);
+      return createEmptyOrder(testType, session.currentProvider?.uuid, orderTypeUuid, orderTypeConfig?.restType);
     },
-    [session.currentProvider?.uuid, orderTypeUuid],
+    [session.currentProvider?.uuid, orderTypeUuid, orderTypeConfig?.restType],
   );
 
   const addToBasket = useCallback(() => {

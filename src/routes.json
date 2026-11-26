@@ -21,10 +21,20 @@
       "name": "medicalsupplyorder-detail-table",
       "component": "medicalSupplyOrderDetailTable",
       "slot": "medicalsupplyorder-detail-slot"
+    },
+    {
+      "name": "commodityorder-action-menu-item",
+      "component": "modifyMedicalSupplyOrderMenuItem",
+      "slot": "commodityorder-action-menu-items-slot",
+      "order": 0
+    },
+    {
+      "name": "commodityorder-detail-table",
+      "component": "medicalSupplyOrderDetailTable",
+      "slot": "commodityorder-detail-slot"
     }
   ],
-  "pages": [
-  ],
+  "pages": [],
   "workspaces2": [
     {
       "name": "medical-supply-orderable-concept-workspace",

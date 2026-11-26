@@ -9,6 +9,18 @@ export const configSchema = {
         _type: Type.UUID,
         _description: 'The UUID of the order type with the listed in the order basket',
       },
+      restType: {
+        _type: Type.String,
+        _default: 'medicalsupplyorder',
+        _description:
+          "REST type the order is posted as: 'medicalsupplyorder' for medical supplies, 'commodityorder' for commodities such as nutrition (orderexpansion 2.2+). Must match the order type's Java class.",
+      },
+      quantityUnitsConceptUuid: {
+        _type: Type.String,
+        _default: '',
+        _description:
+          'Concept whose members (or answers, see quantityUnits.map) are the quantity units for this order type. Empty uses the global quantityUnits concept.',
+      },
       orderableConceptSets: {
         _type: Type.Array,
         _description:
@@ -58,6 +70,8 @@ export const configSchema = {
 export type ConfigObject = {
   orderTypes: Array<{
     orderTypeUuid: string;
+    restType: string;
+    quantityUnitsConceptUuid: string;
     orderableConceptSets: Array<string>;
   }>;
   showReferenceNumberField: boolean;

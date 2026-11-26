@@ -6,4 +6,6 @@ export interface MedicalSupplyOrderBasketItem extends OrderBasketItem {
   orderer?: string;
   quantity?: number;
   quantityUnits?: OpenmrsResource;
+  /** REST order type to post as, e.g. medicalsupplyorder or commodityorder; from the order type's config. */
+  restType?: string;
 }
